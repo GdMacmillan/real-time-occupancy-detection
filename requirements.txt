@@ -1,0 +1,24 @@
+# Core ML and Computer Vision
+opencv-python>=4.9.0.80    # Video capture and image processing
+ultralytics>=8.1.0         # YOLOv8 implementation
+torch>=2.2.0               # Deep learning framework
+torchvision>=0.17.0        # Computer vision utilities
+
+# Data manipulation and analysis
+numpy>=1.26.0              # Numerical computing
+pandas>=2.2.0              # Data analysis
+matplotlib>=3.8.0          # Plotting and visualization
+
+# Jupyter environment
+jupyter>=1.0.0             # Jupyter notebook interface
+ipykernel>=6.29.0          # Python kernel for Jupyter
+ipywidgets>=8.1.1          # Interactive widgets for notebooks
+
+# Development tools
+python-dotenv>=1.0.0       # Environment variable management
+black>=24.1.0              # Code formatting
+pylint>=3.0.3              # Code linting
+
+# Python Service dependencies
+websockets>=14.0
+pydantic>=2.6.0

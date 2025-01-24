@@ -1,0 +1,13 @@
+# Code quality
+black==24.1.1
+flake8==7.0.0
+isort==5.13.2
+pre-commit==3.6.0
+
+# Testing
+pytest==7.4.4
+pytest-cov==4.1.0
+
+# Notebooks
+jupyter==1.0.0
+notebook==7.0.7
