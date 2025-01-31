@@ -1,0 +1,18 @@
+api:
+  websocket:
+    host: "127.0.0.1"
+    port: 8765
+    path: "/ws"
+
+service:
+  host: "127.0.0.1"
+  port: 8000
+  log_dir: "logs/dev"
+
+database:
+  type: "sqlite"
+  url: "sqlite:///./occupancy.db"
+
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s" 

@@ -66,31 +66,45 @@
 
 ```
 occupancy-detection/
-├── src/
-│ ├── cv_module/
-│ │ ├── camera.py
-│ │ ├── detector.py
-│ │ └── websocket_server.py
-│ ├── backend/
-│ │ ├── api/
-│ │ ├── models/
-│ │ └── services/
-│ └── ios_app/
-│   ├── Views/
-│   ├── Models/
-│   └── Services/
-├── notebooks/
-│ ├── 01_camera_setup.ipynb
-│ ├── 02_model_testing.ipynb
-│ └── 03_performance_analysis.ipynb
-├── tests/
 ├── config/
+│   └── shared.yaml         # Shared configuration between components
+├── cv_module/             # CV module (moved to root)
+│   ├── config/           # CV module specific configuration
+│   │   ├── default.yaml
+│   │   ├── development.yaml
+│   │   └── production.yaml
+│   ├── .env.template     # Environment variables template
+│   ├── camera.py
+│   ├── detector.py
+│   └── websocket_server.py
+├── src/
+│   ├── backend/
+│   │   ├── config/      # Backend specific configuration
+│   │   ├── api/
+│   │   ├── models/
+│   │   └── services/
+│   └── ios_app/
+│       ├── Views/
+│       ├── Models/
+│       └── Services/
+├── docs/
+│   ├── cv_module/
+│   │   └── configuration.md
+│   └── backend/
+├── notebooks/
+├── tests/
 └── requirements.txt
 ```
 
 ### 2.1 Configuration Management
 
-The project uses a hierarchical configuration system with environment-specific profiles. Configuration files are stored in the `config/` directory.
+The project uses a hierarchical configuration system with environment-specific profiles:
+
+1. CV Module configuration is located in `cv_module/config/`
+2. Shared configuration is in `config/shared.yaml`
+3. Environment variables template is at `cv_module/.env.template`
+
+To set up the configuration:
 
 #### CV Module Configuration Structure
 ```yaml
@@ -176,18 +190,141 @@ OCCUPANCY_CAMERA_ID=0
      python -m src.cv_module.service
      ```
 
-### Phase 2: Backend Development
+### Phase 2: Backend Development (FastAPI)
 - **Objectives:**
-  1. Create FastAPI server
-  2. Implement WebSocket endpoints
-  3. Set up database schema
+  1. Create FastAPI server with WebSocket support
+  2. Implement authentication and security
+  3. Set up database schema and migrations
   4. Create API documentation
+  5. Implement event logging and monitoring
+
+- **Backend Structure:**
+  ```
+  backend/
+  ├── app/
+  │   ├── api/
+  │   │   ├── v1/
+  │   │   │   ├── endpoints/
+  │   │   │   │   ├── detection.py
+  │   │   │   │   ├── websocket.py
+  │   │   │   │   └── config.py
+  │   │   │   └── api.py
+  │   │   └── deps.py
+  │   ├── core/
+  │   │   ├── config.py
+  │   │   ├── security.py
+  │   │   └── events.py
+  │   ├── db/
+  │   │   ├── base.py
+  │   │   └── session.py
+  │   ├── models/
+  │   │   ├── detection.py
+  │   │   └── config.py
+  │   ├── schemas/
+  │   │   ├── detection.py
+  │   │   └── config.py
+  │   └── main.py
+  ├── alembic/
+  │   └── versions/
+  ├── tests/
+  └── requirements.txt
+  ```
+
+- **Key Features:**
+  1. **WebSocket Integration:**
+     - Real-time detection event forwarding
+     - Client session management
+     - Heartbeat monitoring
+     - Event buffering and replay
+
+  2. **API Endpoints:**
+     ```python
+     # Detection events
+     GET /api/v1/detections/
+     GET /api/v1/detections/{detection_id}
+     GET /api/v1/detections/stats
+     
+     # Configuration
+     GET /api/v1/config/
+     PUT /api/v1/config/
+     
+     # WebSocket
+     WS  /ws/detections/
+     ```
+
+  3. **Database Schema:**
+     - Detection events
+     - Configuration history
+     - System statistics
+     - Client sessions
+
+  4. **Authentication:**
+     - API key authentication
+     - WebSocket session management
+     - Role-based access control
+
+- **Dependencies:**
+  ```toml
+  # Backend requirements
+  fastapi>=0.109.0
+  uvicorn>=0.27.0
+  sqlalchemy>=2.0.25
+  alembic>=1.13.1
+  pydantic>=2.5.3
+  pydantic-settings>=2.1.0
+  python-jose>=3.3.0
+  passlib>=1.7.4
+  python-multipart>=0.0.6
+  websockets>=12.0
+  ```
+
+- **Development Setup:**
+  ```bash
+  # Install backend dependencies
+  pip install -r backend/requirements.txt
+
+  # Set up environment variables
+  cp backend/.env.template backend/.env
+
+  # Initialize database
+  alembic upgrade head
+
+  # Run development server
+  uvicorn app.main:app --reload --port 8000
+  ```
+
+- **Testing:**
+  ```bash
+  # Run backend tests
+  pytest backend/tests/
+
+  # Test WebSocket connection
+  python scripts/test_websocket.py
+  ```
+
+- **Documentation:**
+  - Swagger UI: `http://localhost:8000/docs`
+  - ReDoc: `http://localhost:8000/redoc`
+  - OpenAPI Schema: `http://localhost:8000/openapi.json`
 
 - **Deliverables:**
-  - Running API server
-  - WebSocket communication
-  - Database integration
-  - API documentation
+  - [ ] FastAPI application structure
+  - [ ] Database models and migrations
+  - [ ] WebSocket integration with CV module
+  - [ ] Authentication system
+  - [ ] API documentation
+  - [ ] Test suite
+  - [ ] Performance monitoring
+  - [ ] Deployment configuration
+
+- **Next Steps:**
+  1. Set up FastAPI project structure
+  2. Create database models
+  3. Implement WebSocket handlers
+  4. Add authentication
+  5. Create API endpoints
+  6. Write tests
+  7. Document API
 
 ### Phase 3: iOS Application
 - **Objectives:**
@@ -225,11 +362,9 @@ OCCUPANCY_CAMERA_ID=0
    ```
 4. Set up configuration:
    ```bash
-   # Copy configuration templates
-   cp config/service_config_development.yaml.template config/service_config_development.yaml
-   cp config/service_config_production.yaml.template config/service_config_production.yaml
-   cp .env.template .env
-
+   # Copy environment file for CV module
+   cp src/cv_module/config/.env.example src/cv_module/config/.env
+   
    # Edit configurations as needed
    # The service will automatically create required directories
    ```

@@ -1,0 +1,38 @@
+# Production environment overrides
+service:
+  host: "0.0.0.0"  # Accept external connections
+  port: 8765
+  log_dir: "logs/prod"
+
+camera:
+  type: "realsense"
+  params:
+    resolution:
+      width: 1280
+      height: 720
+    fps: 30
+    # RealSense specific settings
+    enable_infrared: false
+    align_depth: true
+    filters:
+      decimation: 2
+      spatial: true
+      temporal: true
+      hole_filling: true
+
+detector:
+  type: "yolo"
+  model:
+    name: "yolov8m.pt"  # Use medium model for better accuracy
+    confidence_threshold: 0.5
+    verbose: false
+    summary_interval: 60  # Less frequent summaries in production
+    params:
+      iou_threshold: 0.45
+      max_det: 300
+
+websocket:
+  max_clients: 50  # Allow more clients in production
+  message_queue_size: 1000  # Larger queue for production load
+  ping_interval: 30
+  ping_timeout: 10 

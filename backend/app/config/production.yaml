@@ -1,0 +1,10 @@
+service:
+  host: "0.0.0.0"
+  log_dir: "logs/prod"
+
+database:
+  type: "postgresql"
+  url: "${DATABASE_URL}"  # Will be loaded from environment variables
+
+logging:
+  level: "INFO" 

@@ -1,0 +1,5 @@
+service:
+  log_dir: "logs/dev"
+
+logging:
+  level: "DEBUG" 

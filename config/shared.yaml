@@ -1,0 +1,15 @@
+# Shared configuration between components
+api:
+  websocket:
+    host: "127.0.0.1"
+    port: 8765
+    path: "/ws"
+
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+services:
+  cv_module:
+    name: "cv-service"
+    version: "1.0.0" 
