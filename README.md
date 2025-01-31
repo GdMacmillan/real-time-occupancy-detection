@@ -36,14 +36,16 @@
   - RESTful API endpoints
   - WebSocket handler
   - Data persistence layer
+  - Database migrations (Alembic)
 - **Key Features:**
-  - Authentication and security
   - Event logging
   - Configuration management
+  - User and device management
 - **Dependencies:**
   - fastapi
   - uvicorn
-  - sqlalchemy
+  - sqlmodel
+  - alembic
   - pydantic
 
 ### 1.3 iOS Application (Swift)
@@ -192,139 +194,86 @@ OCCUPANCY_CAMERA_ID=0
 
 ### Phase 2: Backend Development (FastAPI)
 - **Objectives:**
-  1. Create FastAPI server with WebSocket support
-  2. Implement authentication and security
-  3. Set up database schema and migrations
-  4. Create API documentation
-  5. Implement event logging and monitoring
+  ✓ Create FastAPI server with WebSocket support
+  ✓ Set up WebSocket connection to CV module
+  ✓ Implement event logging and monitoring
+  ✓ Set up configuration management
+  - Set up database schema and migrations (Pending)
 
-- **Backend Structure:**
+- **Current Backend Structure:**
   ```
   backend/
+  ├── alembic/                # Database migrations
+  │   ├── versions/          # Migration files
+  │   ├── env.py            # Alembic environment
+  │   ├── README
+  │   └── script.py.mako    # Migration template
+  ├── alembic.ini           # Alembic configuration
   ├── app/
   │   ├── api/
-  │   │   ├── v1/
-  │   │   │   ├── endpoints/
-  │   │   │   │   ├── detection.py
-  │   │   │   │   ├── websocket.py
-  │   │   │   │   └── config.py
-  │   │   │   └── api.py
-  │   │   └── deps.py
+  │   │   └── v1/
+  │   │       ├── endpoints/
+  │   │       │   ├── detection.py    # Detection event endpoints
+  │   │       │   ├── device.py       # Device management
+  │   │       │   └── websocket.py    # WebSocket handling
+  │   │       └── api.py
   │   ├── core/
-  │   │   ├── config.py
-  │   │   ├── security.py
-  │   │   └── events.py
+  │   │   ├── config.py      # Configuration management
+  │   │   └── logging.py     # Logging setup
   │   ├── db/
-  │   │   ├── base.py
-  │   │   └── session.py
+  │   │   ├── init_db.py     # Database initialization
+  │   │   └── session.py     # Database session management
   │   ├── models/
-  │   │   ├── detection.py
-  │   │   └── config.py
-  │   ├── schemas/
-  │   │   ├── detection.py
-  │   │   └── config.py
+  │   │   ├── user.py        # User and profile models
+  │   │   ├── detection.py   # Detection event models
+  │   │   └── device.py      # Device models
   │   └── main.py
-  ├── alembic/
-  │   └── versions/
-  ├── tests/
   └── requirements.txt
   ```
 
-- **Key Features:**
-  1. **WebSocket Integration:**
-     - Real-time detection event forwarding
-     - Client session management
-     - Heartbeat monitoring
-     - Event buffering and replay
-
-  2. **API Endpoints:**
-     ```python
-     # Detection events
-     GET /api/v1/detections/
-     GET /api/v1/detections/{detection_id}
-     GET /api/v1/detections/stats
-     
-     # Configuration
-     GET /api/v1/config/
-     PUT /api/v1/config/
-     
-     # WebSocket
-     WS  /ws/detections/
-     ```
-
-  3. **Database Schema:**
-     - Detection events
-     - Configuration history
-     - System statistics
-     - Client sessions
-
-  4. **Authentication:**
-     - API key authentication
-     - WebSocket session management
-     - Role-based access control
-
-- **Dependencies:**
-  ```toml
-  # Backend requirements
-  fastapi>=0.109.0
-  uvicorn>=0.27.0
-  sqlalchemy>=2.0.25
-  alembic>=1.13.1
-  pydantic>=2.5.3
-  pydantic-settings>=2.1.0
-  python-jose>=3.3.0
-  passlib>=1.7.4
-  python-multipart>=0.0.6
-  websockets>=12.0
-  ```
+- **Database Models:**
+  - `User`: Authentication and base user information
+  - `UserProfile`: Extended user details and preferences
+  - `Device`: Connected camera devices
+  - `Detection`: Occupancy detection events
 
 - **Development Setup:**
   ```bash
   # Install backend dependencies
   pip install -r backend/requirements.txt
 
-  # Set up environment variables
-  cp backend/.env.template backend/.env
-
-  # Initialize database
+  # Set up database
+  cd backend
   alembic upgrade head
 
+  # Verify database setup
+  python -m app.db.verify_db
+
   # Run development server
-  uvicorn app.main:app --reload --port 8000
+  python -m app.main
   ```
 
 - **Testing:**
   ```bash
-  # Run backend tests
-  pytest backend/tests/
+  # Start CV module
+  ./start_cv_server.sh
 
-  # Test WebSocket connection
-  python scripts/test_websocket.py
+  # Start backend (separate terminal)
+  python -m backend.app.main
   ```
 
-- **Documentation:**
-  - Swagger UI: `http://localhost:8000/docs`
-  - ReDoc: `http://localhost:8000/redoc`
-  - OpenAPI Schema: `http://localhost:8000/openapi.json`
-
-- **Deliverables:**
-  - [ ] FastAPI application structure
-  - [ ] Database models and migrations
-  - [ ] WebSocket integration with CV module
-  - [ ] Authentication system
-  - [ ] API documentation
-  - [ ] Test suite
-  - [ ] Performance monitoring
-  - [ ] Deployment configuration
-
 - **Next Steps:**
-  1. Set up FastAPI project structure
-  2. Create database models
-  3. Implement WebSocket handlers
-  4. Add authentication
-  5. Create API endpoints
-  6. Write tests
-  7. Document API
+  1. Create database models and migrations
+  2. Add user management
+  3. Enhance error handling
+  4. Add API documentation
+  5. Write test suite
+  6. Add deployment configuration
+
+- **Documentation:**
+  - API documentation (Pending)
+  - WebSocket protocol documentation (Pending)
+  - Configuration guide (Pending)
 
 ### Phase 3: iOS Application
 - **Objectives:**
