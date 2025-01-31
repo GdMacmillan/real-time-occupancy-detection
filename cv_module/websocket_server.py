@@ -29,21 +29,27 @@ class DetectionServer:
         self.clients: Dict[websockets.WebSocketServerProtocol, dict] = {}  # Store client preferences
         self.running = False
         self.server: Optional[websockets.WebSocketServer] = None
+        self.device_info = {
+            "device_id": "cv_module_01",  # Unique ID for this CV module
+            "type": "camera",
+            "name": "Primary Camera",
+            "start_time": datetime.now().isoformat(),
+            "detection_count": 0,
+            "total_frames": 0
+        }
 
     async def register(self, websocket: websockets.WebSocketServerProtocol):
         """Register a new client connection."""
         if len(self.clients) >= self.max_clients:
             logging.warning(
-                f"Max clients ({self.max_clients}) reached. Rejecting new connection."
+                f"[WS Server] Max clients ({self.max_clients}) reached. Rejecting connection."
             )
-            await websocket.close(
-                1013, "Maximum number of clients reached"
-            )  # 1013 = Try Again Later
+            await websocket.close(1013)
             return
 
-        self.clients[websocket] = {"subscribe_images": False}  # Default preferences
+        self.clients[websocket] = {"subscribe_images": False}
         logging.info(
-            f"Client connected. Total clients: {len(self.clients)}/{self.max_clients}"
+            f"[WS Server] New client connected. Total clients: {len(self.clients)}/{self.max_clients}"
         )
 
     async def unregister(self, websocket: websockets.WebSocketServerProtocol):
@@ -55,31 +61,43 @@ class DetectionServer:
         )
 
     async def broadcast_detection(self, detection_result, stats):
-        """Broadcast detection results to all connected clients."""
+        """Broadcast detection results and device status."""
         if not self.clients:
             return
 
+        # Update device statistics
+        self.device_info["total_frames"] = stats.total_frames
+        if detection_result.detected:
+            self.device_info["detection_count"] += 1
+
         for websocket, preferences in self.clients.items():
             try:
-                # Create message payload
                 message = {
                     "timestamp": datetime.now().isoformat(),
-                    "detection": {
-                        **asdict(detection_result),
-                        "timestamp": datetime.fromtimestamp(
-                            detection_result.timestamp
-                        ).isoformat(),
+                    "device_status": {
+                        **self.device_info,
+                        "uptime": (datetime.now() - datetime.fromisoformat(self.device_info["start_time"])).total_seconds(),
+                        "is_online": True
                     },
-                    "stats": asdict(stats),
+                    "detection": {
+                        "detected": detection_result.detected,
+                        "count": detection_result.count,
+                        "confidence": detection_result.confidence,
+                        "timestamp": datetime.fromtimestamp(detection_result.timestamp).isoformat(),
+                        "frame_number": detection_result.frame_number
+                    },
+                    "stats": {
+                        "fps": stats.avg_fps,
+                        "total_frames": stats.total_frames,
+                        "detection_rate": stats.total_detections / stats.total_frames if stats.total_frames > 0 else 0
+                    }
                 }
 
-                # Include image data if client subscribed
+                # Include image only if subscribed
                 if preferences.get("subscribe_images") and detection_result.visualization_data:
                     frame = detection_result.visualization_data["frame"]
-                    # Encode frame as base64 JPEG
                     _, buffer = cv2.imencode('.jpg', frame)
-                    img_base64 = base64.b64encode(buffer).decode('utf-8')
-                    message["image"] = img_base64
+                    message["image"] = base64.b64encode(buffer).decode('utf-8')
 
                 await websocket.send(json.dumps(message))
             except Exception as e:
@@ -93,16 +111,16 @@ class DetectionServer:
             async for message in websocket:
                 try:
                     data = json.loads(message)
-                    # Handle image subscription
+                    logging.info(f"[WS Server] Received message: {data}")
                     if "subscribe_images" in data:
                         self.clients[websocket]["subscribe_images"] = bool(data["subscribe_images"])
-                        logging.info(f"Client image subscription set to: {data['subscribe_images']}")
+                        logging.info(f"[WS Server] Client image subscription set to: {data['subscribe_images']}")
                 except json.JSONDecodeError:
-                    logging.warning(f"Received invalid JSON message: {message}")
+                    logging.warning(f"[WS Server] Invalid JSON message received: {message}")
                 except Exception as e:
-                    logging.error(f"Error handling message: {e}")
+                    logging.error(f"[WS Server] Error handling message: {e}")
         except websockets.exceptions.ConnectionClosed:
-            pass
+            logging.info("[WS Server] Client connection closed")
         finally:
             await self.unregister(websocket)
 

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 from typing import List
 from ....db.session import get_session
@@ -39,4 +39,42 @@ async def get_detection_stats(session: Session = Depends(get_session)):
         f"Detection stats: {detected}/{total} events detected "
         f"({stats['detection_rate']:.1%} detection rate)"
     )
-    return stats 
+    return stats
+
+@router.get("/latest/{device_id}")
+async def get_latest_detection(
+    device_id: str,
+    session: Session = Depends(get_session)
+):
+    """Get the most recent detection event for a device."""
+    detection = session.exec(
+        select(Detection)
+        .where(Detection.device_id == device_id)
+        .order_by(Detection.timestamp.desc())
+        .limit(1)
+    ).first()
+    
+    if not detection:
+        raise HTTPException(status_code=404, detail="No detection events found")
+        
+    return detection
+
+@router.get("/history/{device_id}")
+async def get_detection_history(
+    device_id: str,
+    limit: int = 100,
+    session: Session = Depends(get_session)
+):
+    """Get detection history for a device."""
+    detections = session.exec(
+        select(Detection)
+        .where(Detection.device_id == device_id)
+        .order_by(Detection.timestamp.desc())
+        .limit(limit)
+    ).all()
+    
+    return {
+        "device_id": device_id,
+        "events": detections,
+        "total_events": len(detections)
+    } 
